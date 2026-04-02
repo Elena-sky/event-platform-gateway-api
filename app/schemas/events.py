@@ -1,57 +1,31 @@
-"""Pydantic models for HTTP ingress, canonical queue messages, and API responses."""
+"""HTTP ingress and broker envelope models (event_type doubles as AMQP routing key)."""
 
-from __future__ import annotations
-
+import re
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+EVENT_TYPE_PATTERN = re.compile(r"^[a-z]+(\.[a-z]+)+$")
 
 
 class EventIn(BaseModel):
-    """``POST /events`` body before enrichment (no ``event_id`` / ``occurred_at``)."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "event_type": "user.registered",
-                "source": "frontend",
-                "payload": {
-                    "user_id": 123,
-                    "email": "user@example.com",
-                },
-            }
-        },
-    )
-
-    event_type: str = Field(
-        ...,
-        examples=["user.registered"],
-        description='Dot-notation name, e.g. "domain.action".',
-    )
-    source: str = Field(
-        ...,
-        examples=["frontend"],
-        description="Logical producer of the event.",
-    )
-    payload: dict[str, Any] = Field(
-        ...,
-        description="Arbitrary JSON object carried to consumers.",
-    )
+    event_type: str = Field(..., examples=["user.registered"])
+    source: str = Field(..., examples=["frontend"])
+    payload: dict[str, Any]
 
     @field_validator("event_type")
     @classmethod
     def validate_event_type(cls, value: str) -> str:
-        if not value or "." not in value:
-            msg = "event_type must follow dot notation, e.g. user.registered"
-            raise ValueError(msg)
+        if not EVENT_TYPE_PATTERN.match(value):
+            raise ValueError(
+                "event_type must be lowercase dot notation, e.g. user.registered"
+            )
         return value
 
 
 class EventMessage(BaseModel):
-    """Self-contained message written to the broker (downstream-friendly)."""
-
     event_id: UUID
     event_type: str
     source: str
@@ -59,8 +33,7 @@ class EventMessage(BaseModel):
     payload: dict[str, Any]
 
     @classmethod
-    def from_input(cls, event_in: EventIn) -> EventMessage:
-        """Create a message with a new id and current UTC timestamp."""
+    def from_input(cls, event_in: "EventIn") -> "EventMessage":
         return cls(
             event_id=uuid4(),
             event_type=event_in.event_type,
@@ -71,18 +44,7 @@ class EventMessage(BaseModel):
 
 
 class PublishResult(BaseModel):
-    """Returned to the client after the message is accepted for publishing."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "event_id": "550e8400-e29b-41d4-a716-446655440000",
-                "queue": "events.raw",
-                "status": "accepted",
-            }
-        },
-    )
-
     event_id: UUID
-    queue: str
+    exchange: str
+    routing_key: str
     status: str = "accepted"

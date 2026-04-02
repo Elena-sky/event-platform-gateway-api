@@ -10,6 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+# Published port is ``APP_PORT`` from the runtime environment (see ``.env`` / compose).
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host \"$UVICORN_HOST\" --port \"$APP_PORT\""]

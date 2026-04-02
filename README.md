@@ -8,11 +8,11 @@ The API exposes an **OpenAPI 3** specification generated from route signatures a
 
 ### Live endpoints (running server)
 
-| Resource | URL (default dev server on port 8004) |
+| Resource | URL (use ``APP_PORT`` from ``.env``, e.g. 8000) |
 |----------|----------------------------------------|
-| **OpenAPI JSON** | http://127.0.0.1:8004/openapi.json |
-| **Swagger UI** | http://127.0.0.1:8004/docs |
-| **ReDoc** | http://127.0.0.1:8004/redoc |
+| **OpenAPI JSON** | http://127.0.0.1:${APP_PORT}/openapi.json |
+| **Swagger UI** | http://127.0.0.1:${APP_PORT}/docs |
+| **ReDoc** | http://127.0.0.1:${APP_PORT}/redoc |
 
 ### Static files (YAML / JSON)
 
@@ -42,11 +42,20 @@ Lint and format with [Ruff](https://docs.astral.sh/ruff/) (`pyproject.toml`):
 
 ```bash
 pip install -r requirements-dev.txt
-ruff check app scripts
-ruff format app scripts
+ruff check app scripts tests
+ruff format app scripts tests
 ```
 
-Auto-fix safe issues: `ruff check app scripts --fix`.
+Auto-fix safe issues: `ruff check app scripts tests --fix`.
+
+Tests ([pytest](https://pytest.org/)): RabbitMQ is mocked via `monkeypatch` + `AsyncMock`; no broker required.
+
+```bash
+pytest
+pytest --cov=app --cov-report=term-missing
+```
+
+**CI:** on push/PR to `main` or `master`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs **Ruff** (check + format) and **pytest** with coverage on Python **3.12** and **3.13**.
 
 ## Quick start
 
@@ -60,6 +69,8 @@ docker compose up -d
 
 Defaults: AMQP `localhost:5672`, user/password `admin` / `admin`, management UI: http://localhost:15672
 
+**Docker (this repo):** `docker compose` reads **`env_file: .env`** and maps **`${APP_PORT}:${APP_PORT}`**. Create `.env` from `.env.example` before `docker compose up`. Compose sets `RABBITMQ_HOST=rabbitmq` and `UVICORN_HOST=0.0.0.0` for in-network DNS and container bind.
+
 ### 2. API configuration
 
 ```bash
@@ -67,7 +78,7 @@ cd event-platform-gateway-api
 cp .env.example .env
 ```
 
-Edit `.env` as needed; see `.env.example` for variables.
+Edit `.env` as needed. **All configuration is required** in `.env` (or the environment): the application has **no in-code defaults** for these settings. See `.env.example` for the full list.
 
 ### 3. Virtual environment and dependencies
 
@@ -79,24 +90,25 @@ pip install -r requirements.txt
 
 ### 4. Run the server
 
-From the repository root (where the `app/` package lives):
+From the repository root (where the `app/` package lives). Load `.env` into the shell so `UVICORN_HOST` and `APP_PORT` match what Pydantic uses:
 
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8004
+set -a && . ./.env && set +a
+uvicorn app.main:app --reload --host "$UVICORN_HOST" --port "$APP_PORT"
 ```
 
 On startup the app **connects to RabbitMQ** in `lifespan`; if the broker is unreachable, the process will exit with an error.
 
 ### 5. Verify
 
-- Health: http://127.0.0.1:8004/health → `{"status":"ok"}`
+- Health: `http://127.0.0.1:${APP_PORT}/health` (after loading `.env`) — expect `status`, `service`, `exchange`.
 - OpenAPI: see [OpenAPI](#openapi) (`/openapi.json`, `/docs`, `/redoc`).
 - Publish event: `POST /events` (JSON body per `app/schemas/events.py`), response `202 Accepted`.
 
 Example:
 
 ```bash
-curl -X POST http://localhost:8004/events \
+curl -X POST "http://localhost:${APP_PORT}/events" \
   -H "Content-Type: application/json" \
   -d '{
     "event_type": "user.registered",

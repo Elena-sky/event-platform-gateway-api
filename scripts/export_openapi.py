@@ -8,13 +8,18 @@ import sys
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 
 # Ensure repo root is on path when invoked as `python scripts/export_openapi.py`
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from app.main import app
+# Settings require env: ``.env`` first, then ``tests/test.env`` for any missing keys.
+load_dotenv(_ROOT / ".env")
+load_dotenv(_ROOT / "tests" / "test.env", override=False)
+
+from app.main import app  # noqa: E402
 
 
 def main() -> None:

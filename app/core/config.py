@@ -1,28 +1,27 @@
-"""Application settings loaded from environment variables and optional ``.env`` file."""
+"""Application settings from environment / ``.env`` only (no in-code defaults)."""
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime configuration.
+    """Runtime configuration. Every field must be set via environment or ``.env``."""
 
-    Values are read from the process environment and from a ``.env`` file in the working
-    directory (see ``model_config``). Uppercase names such as ``RABBITMQ_HOST`` map to
-    fields here.
-    """
+    app_name: str
+    app_version: str
+    app_env: str
+    app_port: int
+    log_level: str
+    uvicorn_host: str
 
-    app_name: str = "event-platform-gateway-api"
-    app_version: str = "0.1.0"
-    app_env: str = "dev"
-    app_port: int = 8000
-    log_level: str = "INFO"
+    rabbitmq_host: str
+    rabbitmq_port: int
+    rabbitmq_user: str
+    rabbitmq_password: str
 
-    rabbitmq_host: str = "localhost"
-    rabbitmq_port: int = 5672
-    rabbitmq_user: str = "admin"
-    rabbitmq_password: str = "admin"
-    rabbitmq_queue: str = "events.raw"
-    rabbitmq_exchange: str = ""
+    rabbitmq_exchange: str
+    rabbitmq_exchange_type: str
+    rabbitmq_bootstrap_queue: str
+    rabbitmq_bootstrap_binding_key: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

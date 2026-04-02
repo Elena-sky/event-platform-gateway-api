@@ -11,8 +11,7 @@
         "tags": [
           "health"
         ],
-        "summary": "Liveness",
-        "description": "Returns **200** when the process is up. Does not check RabbitMQ.",
+        "summary": "Healthcheck",
         "operationId": "healthcheck_health_get",
         "responses": {
           "200": {
@@ -20,7 +19,11 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Healthcheck Health Get"
                 }
               }
             }
@@ -33,8 +36,8 @@
         "tags": [
           "events"
         ],
-        "summary": "Publish an event",
-        "description": "Validates the body, assigns an `event_id`, serializes the message, and publishes it to the configured RabbitMQ queue.",
+        "summary": "Publish Event",
+        "description": "Delegate to ``EventPublisherService.publish``.",
         "operationId": "publish_event_events_post",
         "requestBody": {
           "content": {
@@ -58,7 +61,14 @@
             }
           },
           "422": {
-            "description": "Request body does not match the schema (e.g. invalid `event_type`)."
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
@@ -71,7 +81,6 @@
           "event_type": {
             "type": "string",
             "title": "Event Type",
-            "description": "Dot-notation name, e.g. \"domain.action\".",
             "examples": [
               "user.registered"
             ]
@@ -79,15 +88,13 @@
           "source": {
             "type": "string",
             "title": "Source",
-            "description": "Logical producer of the event.",
             "examples": [
               "frontend"
             ]
           },
           "payload": {
             "type": "object",
-            "title": "Payload",
-            "description": "Arbitrary JSON object carried to consumers."
+            "title": "Payload"
           }
         },
         "type": "object",
@@ -96,37 +103,20 @@
           "source",
           "payload"
         ],
-        "title": "EventIn",
-        "description": "``POST /events`` body before enrichment (no ``event_id`` / ``occurred_at``).",
-        "example": {
-          "event_type": "user.registered",
-          "payload": {
-            "email": "user@example.com",
-            "user_id": 123
-          },
-          "source": "frontend"
-        }
+        "title": "EventIn"
       },
-      "HealthResponse": {
+      "HTTPValidationError": {
         "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "description": "Always \"ok\" when this handler runs.",
-            "examples": [
-              "ok"
-            ]
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
-        "title": "HealthResponse",
-        "description": "JSON shape of ``GET /health``.",
-        "example": {
-          "status": "ok"
-        }
+        "title": "HTTPValidationError"
       },
       "PublishResult": {
         "properties": {
@@ -135,9 +125,13 @@
             "format": "uuid",
             "title": "Event Id"
           },
-          "queue": {
+          "exchange": {
             "type": "string",
-            "title": "Queue"
+            "title": "Exchange"
+          },
+          "routing_key": {
+            "type": "string",
+            "title": "Routing Key"
           },
           "status": {
             "type": "string",
@@ -148,15 +142,43 @@
         "type": "object",
         "required": [
           "event_id",
-          "queue"
+          "exchange",
+          "routing_key"
         ],
-        "title": "PublishResult",
-        "description": "Returned to the client after the message is accepted for publishing.",
-        "example": {
-          "event_id": "550e8400-e29b-41d4-a716-446655440000",
-          "queue": "events.raw",
-          "status": "accepted"
-        }
+        "title": "PublishResult"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       }
     }
   },

@@ -1,7 +1,7 @@
 [tool.ruff]
 target-version = "py312"
 line-length = 88
-src = ["app", "scripts"]
+src = ["app", "scripts", "tests"]
 
 [tool.ruff.lint]
 select = [
@@ -21,3 +21,8 @@ select = [
 [tool.ruff.format]
 quote-style = "double"
 docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"

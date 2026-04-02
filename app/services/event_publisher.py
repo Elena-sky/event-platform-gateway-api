@@ -9,21 +9,11 @@ logger = get_logger(__name__)
 
 
 class EventPublisherService:
-    """Application layer between the events API and the messaging client."""
-
     async def publish(self, event_in: EventIn) -> PublishResult:
-        """Publish ``event_in`` and return queue metadata.
-
-        Args:
-            event_in: Validated request body from the HTTP layer.
-
-        Returns:
-            Acknowledgement with ``event_id`` and target queue name.
-        """
         event_message = EventMessage.from_input(event_in)
 
-        await rabbitmq_client.publish_json(
-            routing_key=settings.rabbitmq_queue,
+        await rabbitmq_client.publish_event(
+            routing_key=event_message.event_type,
             payload=event_message.model_dump(mode="json"),
         )
 
@@ -37,7 +27,8 @@ class EventPublisherService:
 
         return PublishResult(
             event_id=event_message.event_id,
-            queue=settings.rabbitmq_queue,
+            exchange=settings.rabbitmq_exchange,
+            routing_key=event_message.event_type,
         )
 
 

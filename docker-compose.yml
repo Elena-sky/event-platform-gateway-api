@@ -1,0 +1,25 @@
+# Local / container run for this service only. Start broker first:
+#   cd event-platform-infra && docker compose up -d
+# Requires ``.env`` (copy from ``.env.example``). Compose overrides broker host for Docker DNS.
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: event-platform-gateway-api
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      UVICORN_HOST: 0.0.0.0
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    restart: unless-stopped
+    networks:
+      - event-platform
+
+networks:
+  event-platform:
+    external: true
+    name: event-platform-net
