@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.api.routes.events import router as events_router
 from app.api.routes.health import router as health_router
+from app.api.routes.observability import router as observability_router
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 from app.messaging.rabbitmq import rabbitmq_client
@@ -21,6 +22,10 @@ OPENAPI_TAGS_METADATA = [
     {
         "name": "events",
         "description": "Ingest HTTP events and forward them to RabbitMQ.",
+    },
+    {
+        "name": "observability",
+        "description": "RabbitMQ broker health checks and queue lag metrics.",
     },
 ]
 
@@ -52,3 +57,4 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(events_router)
+app.include_router(observability_router)

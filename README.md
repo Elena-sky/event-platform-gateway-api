@@ -2,6 +2,16 @@
 
 FastAPI HTTP gateway: accepts events and publishes them to RabbitMQ.
 
+## Repositories
+
+[GitHub: Elena-sky](https://github.com/Elena-sky)
+
+- [event-platform-gateway-api](https://github.com/Elena-sky/event-platform-gateway-api)
+- [event-platform-notification-service](https://github.com/Elena-sky/event-platform-notification-service)
+- [event-platform-analytics-audit-service](https://github.com/Elena-sky/event-platform-analytics-audit-service)
+- [event-platform-retry-orchestrator-service](https://github.com/Elena-sky/event-platform-retry-orchestrator-service)
+- [event-platform-infra](https://github.com/Elena-sky/event-platform-infra)
+
 ## OpenAPI
 
 The API exposes an **OpenAPI 3** specification generated from route signatures and Pydantic models.
@@ -34,7 +44,7 @@ To disable interactive docs in production, set `docs_url=None`, `redoc_url=None`
 ## Requirements
 
 - **Python 3.12 or 3.13** (3.13 recommended). On **Python 3.14**, installing `pydantic-core` from `requirements.txt` often fails during build — use 3.12/3.13 or wait for wheels for your Python version.
-- A running **RabbitMQ** instance (local or from the `event-platform-infra` repo).
+- A running **RabbitMQ** instance (local or from [event-platform-infra](https://github.com/Elena-sky/event-platform-infra)).
 
 ## Development
 
@@ -69,7 +79,7 @@ docker compose up -d
 
 Defaults: AMQP `localhost:5672`, user/password `admin` / `admin`, management UI: http://localhost:15672
 
-**Docker (this repo):** `docker compose` reads **`env_file: .env`** and maps **`${APP_PORT}:${APP_PORT}`**. Create `.env` from `.env.example` before `docker compose up`. Compose sets `RABBITMQ_HOST=rabbitmq` and `UVICORN_HOST=0.0.0.0` for in-network DNS and container bind.
+**Docker:** `cp .env.example .env`, then `docker compose up --build`. Compose sets `RABBITMQ_HOST=rabbitmq` and `UVICORN_HOST=0.0.0.0`. Align `EVENT_PLATFORM_NETWORK_NAME` with [event-platform-infra](https://github.com/Elena-sky/event-platform-infra).
 
 ### 2. API configuration
 
