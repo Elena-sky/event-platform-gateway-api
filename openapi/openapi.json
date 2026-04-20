@@ -72,10 +72,74 @@
           }
         }
       }
+    },
+    "/observability/broker": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Broker health and queue lag",
+        "description": "Returns RabbitMQ health-check results (aliveness + node) and message-lag stats for all configured monitored queues.",
+        "operationId": "broker_overview_observability_broker_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrokerOverview"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "BrokerCheck": {
+        "properties": {
+          "aliveness": {
+            "type": "boolean",
+            "title": "Aliveness",
+            "description": "True when /api/aliveness-test/%2F returns 200."
+          },
+          "node_health": {
+            "type": "boolean",
+            "title": "Node Health",
+            "description": "True when /api/healthchecks/node returns 200."
+          }
+        },
+        "type": "object",
+        "required": [
+          "aliveness",
+          "node_health"
+        ],
+        "title": "BrokerCheck",
+        "description": "Results of RabbitMQ health-check endpoints."
+      },
+      "BrokerOverview": {
+        "properties": {
+          "checks": {
+            "$ref": "#/components/schemas/BrokerCheck"
+          },
+          "queues": {
+            "items": {
+              "$ref": "#/components/schemas/QueueStats"
+            },
+            "type": "array",
+            "title": "Queues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "checks",
+          "queues"
+        ],
+        "title": "BrokerOverview",
+        "description": "Aggregated broker health and queue lag overview."
+      },
       "EventIn": {
         "properties": {
           "event_type": {
@@ -147,6 +211,45 @@
         ],
         "title": "PublishResult"
       },
+      "QueueStats": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Queue name."
+          },
+          "messages": {
+            "type": "integer",
+            "title": "Messages",
+            "description": "Total messages in queue (ready + unacked)."
+          },
+          "messages_ready": {
+            "type": "integer",
+            "title": "Messages Ready",
+            "description": "Messages ready for delivery."
+          },
+          "messages_unacknowledged": {
+            "type": "integer",
+            "title": "Messages Unacknowledged",
+            "description": "Messages delivered but not yet acked."
+          },
+          "consumers": {
+            "type": "integer",
+            "title": "Consumers",
+            "description": "Number of active consumers."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "messages",
+          "messages_ready",
+          "messages_unacknowledged",
+          "consumers"
+        ],
+        "title": "QueueStats",
+        "description": "Lag and consumer metrics for a single queue."
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -190,6 +293,10 @@
     {
       "name": "events",
       "description": "Ingest HTTP events and forward them to RabbitMQ."
+    },
+    {
+      "name": "observability",
+      "description": "RabbitMQ broker health checks and queue lag metrics."
     }
   ]
 }
