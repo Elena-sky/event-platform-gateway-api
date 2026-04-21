@@ -6,7 +6,6 @@ import json
 from datetime import datetime
 from typing import Any
 
-import aio_pika
 from aio_pika import (
     DeliveryMode,
     ExchangeType,
