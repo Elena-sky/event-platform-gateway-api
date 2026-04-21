@@ -2,6 +2,40 @@
 
 FastAPI HTTP gateway: accepts events and publishes them to RabbitMQ.
 
+## Flow
+
+```mermaid
+sequenceDiagram
+    participant C as HTTP Client
+    participant G as gateway-api
+    participant R as RabbitMQ<br/>events.topic
+
+    C->>G: POST /events<br/>{event_type, source, payload}
+    G->>G: Validate EventIn (Pydantic)<br/>event_type must match [a-z]+(\.[a-z]+)+
+    G->>G: Build EventMessage<br/>add event_id (UUID) + occurred_at
+    G->>R: publish(routing_key=event_type, body=EventMessage)
+    R-->>G: broker confirmed
+    G-->>C: 202 Accepted<br/>{event_id, exchange, routing_key, status}
+```
+
+```mermaid
+flowchart LR
+    subgraph gateway-api
+        V["Validate\nEventIn"]
+        B["Build\nEventMessage"]
+        P["RabbitMQClient\npublish_event()"]
+    end
+
+    HTTP(["POST /events"]) --> V --> B --> P
+
+    subgraph Broker["events.topic (topic exchange)"]
+        NQ["notifications.queue\nbinding: user.*, order.created,\npayment.failed"]
+        AQ["analytics.events\nbinding: #"]
+    end
+
+    P -->|routing_key = event_type| NQ & AQ
+```
+
 ## Repositories
 
 [GitHub: Elena-sky](https://github.com/Elena-sky)
