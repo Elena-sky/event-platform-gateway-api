@@ -6,7 +6,6 @@ import json
 from datetime import datetime
 from typing import Any
 
-import aio_pika
 from aio_pika import (
     DeliveryMode,
     ExchangeType,
@@ -18,6 +17,7 @@ from aio_pika.abc import AbstractRobustExchange
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.messaging.amqp_retry import connect_robust_when_ready
 
 logger = get_logger(__name__)
 
@@ -67,7 +67,10 @@ class RabbitMQClient:
             },
         )
 
-        self._connection = await aio_pika.connect_robust(settings.rabbitmq_url)
+        self._connection = await connect_robust_when_ready(
+            settings.rabbitmq_url,
+            logger=logger,
+        )
         self._channel = await self._connection.channel()
 
         self._exchange = await self._channel.declare_exchange(
