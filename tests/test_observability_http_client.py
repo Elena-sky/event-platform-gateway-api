@@ -61,10 +61,10 @@ def _patch_httpx(responses: list[MagicMock]):  # noqa: ANN201
 
 def test_all_healthy_full_overview() -> None:
     responses = [
-        _make_resp(200),                     # aliveness ok
-        _make_resp(200),                     # node health ok
-        _make_resp(200, _QUEUE_PAYLOAD),     # events.created
-        _make_resp(200, _QUEUE_PAYLOAD),     # events.dlq
+        _make_resp(200),  # aliveness ok
+        _make_resp(200),  # node health ok
+        _make_resp(200, _QUEUE_PAYLOAD),  # events.created
+        _make_resp(200, _QUEUE_PAYLOAD),  # events.dlq
     ]
     with _patch_httpx(responses):
         result = _run(RabbitMQHttpClient().get_overview())
@@ -87,7 +87,7 @@ def test_queue_fields_mapped_correctly() -> None:
         _make_resp(200),
         _make_resp(200),
         _make_resp(200, payload),  # events.created
-        _make_resp(404),           # events.dlq not found
+        _make_resp(404),  # events.dlq not found
     ]
     with _patch_httpx(responses):
         result = _run(RabbitMQHttpClient().get_overview())
@@ -107,8 +107,8 @@ def test_queue_fields_mapped_correctly() -> None:
 
 def test_aliveness_failure_reflected_in_checks() -> None:
     responses = [
-        _make_resp(503),                    # aliveness fails
-        _make_resp(200),                    # node health ok
+        _make_resp(503),  # aliveness fails
+        _make_resp(200),  # node health ok
         _make_resp(200, _QUEUE_PAYLOAD),
         _make_resp(200, _QUEUE_PAYLOAD),
     ]
@@ -121,8 +121,8 @@ def test_aliveness_failure_reflected_in_checks() -> None:
 
 def test_node_health_failure_reflected_in_checks() -> None:
     responses = [
-        _make_resp(200),                    # aliveness ok
-        _make_resp(503),                    # node health fails
+        _make_resp(200),  # aliveness ok
+        _make_resp(503),  # node health fails
         _make_resp(200, _QUEUE_PAYLOAD),
         _make_resp(200, _QUEUE_PAYLOAD),
     ]
@@ -157,7 +157,7 @@ def test_queue_not_found_omitted_from_results() -> None:
         _make_resp(200),
         _make_resp(200),
         _make_resp(200, _QUEUE_PAYLOAD),  # events.created found
-        _make_resp(404),                  # events.dlq missing
+        _make_resp(404),  # events.dlq missing
     ]
     with _patch_httpx(responses):
         result = _run(RabbitMQHttpClient().get_overview())
@@ -184,7 +184,7 @@ def test_missing_queue_fields_default_to_zero() -> None:
     responses = [
         _make_resp(200),
         _make_resp(200),
-        _make_resp(200, {}),   # empty payload — all counts absent
+        _make_resp(200, {}),  # empty payload — all counts absent
         _make_resp(404),
     ]
     with _patch_httpx(responses):

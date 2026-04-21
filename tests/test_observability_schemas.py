@@ -1,10 +1,8 @@
 """Unit tests for observability Pydantic schemas (no HTTP, no I/O)."""
 
 import pytest
-from pydantic import ValidationError
-
 from app.schemas.observability import BrokerCheck, BrokerOverview, QueueStats
-
+from pydantic import ValidationError
 
 # ---------------------------------------------------------------------------
 # QueueStats
