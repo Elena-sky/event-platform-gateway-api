@@ -12,7 +12,7 @@ class EventPublisherService:
     async def publish(self, event_in: EventIn) -> PublishResult:
         event_message = EventMessage.from_input(event_in)
 
-        # Broker-related errors from publish_event propagate to the route for HTTP mapping.
+        # Publish failures propagate to the route for HTTP mapping.
         await rabbitmq_client.publish_event(
             routing_key=event_message.event_type,
             payload=event_message.model_dump(mode="json"),
