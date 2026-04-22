@@ -148,7 +148,7 @@ class RabbitMQClient:
                 ),
                 timeout=settings.rabbitmq_publish_timeout_seconds,
             )
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             raise PublishNotConfirmedError(
                 f"Broker did not confirm publish within "
                 f"{settings.rabbitmq_publish_timeout_seconds}s "
