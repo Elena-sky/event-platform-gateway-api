@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Comma-separated queue names to monitor, e.g. "events.created,events.dlq"
     rabbitmq_monitored_queues: str
 
+    # Publisher reliability
+    rabbitmq_publish_timeout_seconds: int
+    rabbitmq_mandatory_publish: bool
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

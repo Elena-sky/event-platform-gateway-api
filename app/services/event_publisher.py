@@ -2,6 +2,7 @@
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.domain.exceptions import MessageReturnedError, PublishNotConfirmedError
 from app.messaging.rabbitmq import rabbitmq_client
 from app.schemas.events import EventIn, EventMessage, PublishResult
 
@@ -12,13 +13,15 @@ class EventPublisherService:
     async def publish(self, event_in: EventIn) -> PublishResult:
         event_message = EventMessage.from_input(event_in)
 
+        # PublishNotConfirmedError and MessageReturnedError are intentionally
+        # not caught here — they propagate to the route for HTTP mapping.
         await rabbitmq_client.publish_event(
             routing_key=event_message.event_type,
             payload=event_message.model_dump(mode="json"),
         )
 
         logger.info(
-            "Event accepted for publishing",
+            "Event broker-confirmed and accepted",
             extra={
                 "event_id": str(event_message.event_id),
                 "event_type": event_message.event_type,
