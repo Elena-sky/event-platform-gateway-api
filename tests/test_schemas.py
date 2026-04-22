@@ -3,7 +3,7 @@
 import uuid
 
 import pytest
-from app.schemas.events import EventIn, EventMessage
+from app.schemas.events import EventIn, EventMessage, PublishResult
 from pydantic import ValidationError
 
 
@@ -35,6 +35,19 @@ def test_event_in_accepts_valid_event_type(event_type: str) -> None:
 def test_event_in_rejects_invalid_event_type(event_type: str) -> None:
     with pytest.raises(ValidationError):
         EventIn(event_type=event_type, source="s", payload={})
+
+
+def test_publish_result_defaults_status_accepted() -> None:
+    eid = uuid.uuid4()
+    result = PublishResult(
+        event_id=eid,
+        exchange="events.topic",
+        routing_key="user.registered",
+    )
+    assert result.event_id == eid
+    assert result.exchange == "events.topic"
+    assert result.routing_key == "user.registered"
+    assert result.status == "accepted"
 
 
 def test_event_message_from_input_sets_id_and_timestamp() -> None:

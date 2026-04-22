@@ -18,7 +18,7 @@ class EventPublisherService:
         )
 
         logger.info(
-            "Event accepted for publishing",
+            "Event broker-confirmed and accepted",
             extra={
                 "event_id": str(event_message.event_id),
                 "event_type": event_message.event_type,

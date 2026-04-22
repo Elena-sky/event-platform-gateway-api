@@ -1,11 +1,21 @@
-"""RabbitMQ client: topic exchange, bootstrap queue/bindings, persistent publishes."""
+"""RabbitMQ client: topic exchange, bootstrap queue/bindings, persistent publishes.
+
+----------------
+* Channel opened with ``publisher_confirms=True`` — broker acks every publish.
+* ``publish_event`` wraps the publish in ``asyncio.wait_for`` with a configurable
+  timeout; a ``TimeoutError`` becomes ``PublishNotConfirmedError``.
+* ``mandatory=True`` tells the broker to return unroutable messages instead of
+  silently dropping them; a ``DeliveryError`` becomes ``MessageReturnedError``.
+"""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime
 from typing import Any
 
+import aio_pika
 from aio_pika import (
     DeliveryMode,
     ExchangeType,
@@ -17,6 +27,7 @@ from aio_pika.abc import AbstractRobustExchange
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.domain.exceptions import MessageReturnedError, PublishNotConfirmedError
 from app.messaging.amqp_retry import connect_robust_when_ready
 
 logger = get_logger(__name__)
@@ -71,7 +82,8 @@ class RabbitMQClient:
             settings.rabbitmq_url,
             logger=logger,
         )
-        self._channel = await self._connection.channel()
+        # publisher_confirms=True: broker sends ack/nack for every published message
+        self._channel = await self._connection.channel(publisher_confirms=True)
 
         self._exchange = await self._channel.declare_exchange(
             name=settings.rabbitmq_exchange,
@@ -125,17 +137,35 @@ class RabbitMQClient:
             timestamp=_amqp_timestamp(payload.get("occurred_at")),
         )
 
-        await self._exchange.publish(
-            message=message,
-            routing_key=routing_key,
-        )
+        try:
+            # wait_for guards against broker stalls; DeliveryError fires when
+            # mandatory=True and the message cannot be routed to any queue.
+            await asyncio.wait_for(
+                self._exchange.publish(
+                    message=message,
+                    routing_key=routing_key,
+                    mandatory=settings.rabbitmq_mandatory_publish,
+                ),
+                timeout=settings.rabbitmq_publish_timeout_seconds,
+            )
+        except TimeoutError as exc:
+            raise PublishNotConfirmedError(
+                f"Broker did not confirm publish within "
+                f"{settings.rabbitmq_publish_timeout_seconds}s "
+                f"(routing_key={routing_key})"
+            ) from exc
+        except aio_pika.exceptions.DeliveryError as exc:
+            raise MessageReturnedError(
+                f"Broker returned unroutable message for routing_key={routing_key}"
+            ) from exc
 
         logger.info(
-            "Event published to exchange",
+            "Event published and confirmed",
             extra={
                 "exchange": settings.rabbitmq_exchange,
                 "routing_key": routing_key,
                 "payload_size": len(body),
+                "mandatory": settings.rabbitmq_mandatory_publish,
             },
         )
 
